@@ -8,12 +8,26 @@ import plotly.graph_objects as go
 # -------------------------------------------------------------------
 st.set_page_config(page_title="QA System Visualization", layout="wide", page_icon="🏭")
 hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
+    <style>
+    
+    #MainMenu {visibility: hidden !important;}
+    
+    
+    footer {visibility: hidden !important;}
+    
+    
+    header {visibility: hidden !important;}
+    
+  
+    [data-testid="stToolbar"] {visibility: hidden !important;}
+    
+  
+    .block-container {
+        padding-top: 0rem !important; 
+    }
+    </style>
+"""
+st.markdown(hide_st_style, unsafe_allow_html=True)
 st.markdown("""
 <style>
     .main { background-color: #f4f6f9; }
