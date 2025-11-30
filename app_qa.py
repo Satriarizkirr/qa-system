@@ -7,7 +7,13 @@ import plotly.graph_objects as go
 # 1. KONFIGURASI TAMPILAN
 # -------------------------------------------------------------------
 st.set_page_config(page_title="QA System Visualization", layout="wide", page_icon="🏭")
-
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
 st.markdown("""
 <style>
     .main { background-color: #f4f6f9; }
