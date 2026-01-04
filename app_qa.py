@@ -40,7 +40,8 @@ st.markdown("""
 # -------------------------------------------------------------------
 st.sidebar.title("Quality Assurance Dashboard")
 st.sidebar.write("Upload Data Produksi:")
-uploaded_file = st.sidebar.file_uploader("Drop file Excel di sini", type=["xlsx", "xls"])
+# MODIFIKASI: Ditambah accept_multiple_files=True
+uploaded_files = st.sidebar.file_uploader("Drop file Excel di sini", type=["xlsx", "xls"], accept_multiple_files=True)
 
 st.sidebar.markdown("---")
 st.sidebar.info("Dashboard ini otomatis menghitung Sigma Level dan Seven Tools Quality secara real-time.")
@@ -48,10 +49,15 @@ st.sidebar.info("Dashboard ini otomatis menghitung Sigma Level dan Seven Tools Q
 # -------------------------------------------------------------------
 # 3. LOGIKA UTAMA
 # -------------------------------------------------------------------
-if uploaded_file:
+if uploaded_files:
     try:
-        # Load Data
-        df = pd.read_excel(uploaded_file)
+        # MODIFIKASI: Logika untuk menggabungkan banyak file
+        all_df = []
+        for file in uploaded_files:
+            temp_df = pd.read_excel(file)
+            all_df.append(temp_df)
+        
+        df = pd.concat(all_df, ignore_index=True)
         
         # Pre-processing: Pastikan tipe data benar
         if 'Shift' in df.columns:
@@ -63,13 +69,16 @@ if uploaded_file:
             st.error("❌ Format Excel Salah! Pastikan ada kolom: Tanggal, quantity check, qty ng, Jenis_Defect")
         else:
             df['Tanggal'] = pd.to_datetime(df['Tanggal'])
+            
+            # MODIFIKASI: Tambah kolom Bulan untuk filter
+            df['Bulan'] = df['Tanggal'].dt.strftime('%B %Y')
 
             # --- HEADER ---
             st.title("Production Quality Dashboard")
             
             # --- GLOBAL FILTER ---
             with st.expander("🔎 Global Filter (Klik untuk Memfilter Data)"):
-                col_f1, col_f2, col_f3 = st.columns(3)
+                col_f1, col_f2, col_f3, col_f4 = st.columns(4) # MODIFIKASI: Tambah kolom kolom filter
                 
                 with col_f1:
                     lines = ["All"] + sorted(list(df['Line'].unique())) if 'Line' in df.columns else []
@@ -83,10 +92,16 @@ if uploaded_file:
                     types = ["All"] + sorted(list(df['Tipe_Produk'].unique())) if 'Tipe_Produk' in df.columns else []
                     sel_type = st.selectbox("Filter Tipe Produk:", types)
                 
+                # MODIFIKASI: Tambah filter Bulan
+                with col_f4:
+                    available_months = ["All"] + sorted(list(df['Bulan'].unique()), key=lambda x: pd.to_datetime(x))
+                    sel_month = st.selectbox("Filter Bulan:", available_months)
+                
                 # Eksekusi Filter
                 if sel_line != "All": df = df[df['Line'] == sel_line]
                 if sel_size != "All": df = df[df['Ukuran'] == sel_size]
                 if sel_type != "All": df = df[df['Tipe_Produk'] == sel_type]
+                if sel_month != "All": df = df[df['Bulan'] == sel_month]
 
             st.divider()
 
