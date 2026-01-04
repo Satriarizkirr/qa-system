@@ -40,8 +40,8 @@ st.markdown("""
 # -------------------------------------------------------------------
 st.sidebar.title("Quality Assurance Dashboard")
 st.sidebar.write("Upload Data Produksi:")
-# MODIFIKASI: Ditambah accept_multiple_files=True
-uploaded_files = st.sidebar.file_uploader("Drop file Excel di sini", type=["xlsx", "xls"], accept_multiple_files=True)
+# TERAPAN: Aktifkan multiple files
+uploaded_files = st.sidebar.file_uploader("Drop satu atau beberapa file Excel di sini", type=["xlsx", "xls"], accept_multiple_files=True)
 
 st.sidebar.markdown("---")
 st.sidebar.info("Dashboard ini otomatis menghitung Sigma Level dan Seven Tools Quality secara real-time.")
@@ -51,53 +51,54 @@ st.sidebar.info("Dashboard ini otomatis menghitung Sigma Level dan Seven Tools Q
 # -------------------------------------------------------------------
 if uploaded_files:
     try:
-        # MODIFIKASI: Logika untuk menggabungkan banyak file
+        # TERAPAN: Logika menggabungkan banyak file menjadi satu DataFrame
         all_df = []
         for file in uploaded_files:
             temp_df = pd.read_excel(file)
             all_df.append(temp_df)
         
-        df = pd.concat(all_df, ignore_index=True)
+        df_raw = pd.concat(all_df, ignore_index=True)
         
         # Pre-processing: Pastikan tipe data benar
-        if 'Shift' in df.columns:
-            df['Shift'] = df['Shift'].astype(str)
+        if 'Shift' in df_raw.columns:
+            df_raw['Shift'] = df_raw['Shift'].astype(str)
         
         # Validasi Kolom Wajib
         req_cols = ['Tanggal', 'quantity check', 'qty ng', 'Jenis_Defect']
-        if not all(col in df.columns for col in req_cols):
+        if not all(col in df_raw.columns for col in req_cols):
             st.error("❌ Format Excel Salah! Pastikan ada kolom: Tanggal, quantity check, qty ng, Jenis_Defect")
         else:
-            df['Tanggal'] = pd.to_datetime(df['Tanggal'])
+            df_raw['Tanggal'] = pd.to_datetime(df_raw['Tanggal'])
             
-            # MODIFIKASI: Tambah kolom Bulan untuk filter
-            df['Bulan'] = df['Tanggal'].dt.strftime('%B %Y')
+            # TERAPAN: Tambahkan kolom Bulan untuk sistem filter
+            df_raw['Bulan'] = df_raw['Tanggal'].dt.strftime('%B %Y')
 
             # --- HEADER ---
             st.title("Production Quality Dashboard")
             
             # --- GLOBAL FILTER ---
             with st.expander("🔎 Global Filter (Klik untuk Memfilter Data)"):
-                col_f1, col_f2, col_f3, col_f4 = st.columns(4) # MODIFIKASI: Tambah kolom kolom filter
+                col_f1, col_f2, col_f3, col_f4 = st.columns(4) 
                 
                 with col_f1:
-                    lines = ["All"] + sorted(list(df['Line'].unique())) if 'Line' in df.columns else []
+                    lines = ["All"] + sorted(list(df_raw['Line'].unique())) if 'Line' in df_raw.columns else []
                     sel_line = st.selectbox("Filter Line:", lines)
                 
                 with col_f2:
-                    sizes = ["All"] + sorted(list(df['Ukuran'].unique())) if 'Ukuran' in df.columns else []
+                    sizes = ["All"] + sorted(list(df_raw['Ukuran'].unique())) if 'Ukuran' in df_raw.columns else []
                     sel_size = st.selectbox("Filter Ukuran:", sizes)
                 
                 with col_f3:
-                    types = ["All"] + sorted(list(df['Tipe_Produk'].unique())) if 'Tipe_Produk' in df.columns else []
+                    types = ["All"] + sorted(list(df_raw['Tipe_Produk'].unique())) if 'Tipe_Produk' in df_raw.columns else []
                     sel_type = st.selectbox("Filter Tipe Produk:", types)
                 
-                # MODIFIKASI: Tambah filter Bulan
+                # TERAPAN: Filter Bulan dengan opsi "All"
                 with col_f4:
-                    available_months = ["All"] + sorted(list(df['Bulan'].unique()), key=lambda x: pd.to_datetime(x))
-                    sel_month = st.selectbox("Filter Bulan:", available_months)
+                    month_list = ["All"] + sorted(list(df_raw['Bulan'].unique()), key=lambda x: pd.to_datetime(x))
+                    sel_month = st.selectbox("Filter Bulan:", month_list)
                 
-                # Eksekusi Filter
+                # Eksekusi Filter pada DataFrame copy
+                df = df_raw.copy()
                 if sel_line != "All": df = df[df['Line'] == sel_line]
                 if sel_size != "All": df = df[df['Ukuran'] == sel_size]
                 if sel_type != "All": df = df[df['Tipe_Produk'] == sel_type]
@@ -110,16 +111,14 @@ if uploaded_files:
             total_ng = df['qty ng'].sum()
             defect_rate = (total_ng / total_cek * 100) if total_cek > 0 else 0
             
-            # Logika Sigma Level (Yield to Sigma dengan 1.5 Shift)
             yield_val = 1 - (total_ng / total_cek) if total_cek > 0 else 0
-            if yield_val >= 0.9999999: # Case jika hampir tidak ada defect
+            if yield_val >= 0.9999999:
                 sigma_level = 6.0
-            elif yield_val <= 0.0000001: # Case jika defect semua
+            elif yield_val <= 0.0000001:
                 sigma_level = 0.0
             else:
                 sigma_level = norm.ppf(yield_val) + 1.5
 
-            # Tampilkan KPI
             k1, k2, k3, k4 = st.columns(4)
             k1.metric("Total Produksi", f"{total_cek:,.0f}")
             k2.metric("Total NG", f"{total_ng:,.0f}", delta_color="inverse")
@@ -149,10 +148,9 @@ if uploaded_files:
             with tab2:
                 st.subheader("Advanced Stratification")
                 col_strat1, col_strat2 = st.columns(2)
-                
                 with col_strat1:
                     st.markdown("##### Drill-Down Analysis")
-                    path_options = ['Line', 'Shift', 'Tipe_Produk', 'Jenis_Defect']
+                    path_options = ['Bulan', 'Line', 'Shift', 'Tipe_Produk', 'Jenis_Defect']
                     selected_path = st.multiselect("Urutan Layer (Bisa digeser):", path_options, default=['Line', 'Jenis_Defect'])
                     if selected_path:
                         fig_sun = px.sunburst(df, path=selected_path, values='qty ng', color='qty ng', color_continuous_scale='Reds')
@@ -181,7 +179,6 @@ if uploaded_files:
                 fig_ctrl.add_hline(y=lcl, line_dash="dot", line_color="red", annotation_text="LCL")
                 fig_ctrl.add_hline(y=mean_r, line_color="green", annotation_text="Avg")
                 
-                # Highlight Outliers
                 outliers = daily[(daily['Rate'] > ucl) | (daily['Rate'] < lcl)]
                 fig_ctrl.add_trace(go.Scatter(x=outliers['Tanggal'], y=outliers['Rate'], mode='markers', 
                                             marker=dict(color='red', size=12), name='Out-of-Control'))
@@ -191,9 +188,13 @@ if uploaded_files:
             with tab4:
                 st.subheader("Correlation Analysis")
                 correlation = df['quantity check'].corr(df['qty ng'])
-                fig_scat = px.scatter(df, x='quantity check', y='qty ng', color='Shift', trendline="ols")
+                # TERAPAN: trendline_scope="overall" agar hanya ada SATU garis trendline (Standar QC 7 Tools)
+                fig_scat = px.scatter(df, x='quantity check', y='qty ng', color='Shift', 
+                                     trendline="ols", 
+                                     trendline_scope="overall", 
+                                     trendline_color_override="red")
                 st.plotly_chart(fig_scat, use_container_width=True)
-                st.write(f"**Koefisien Korelasi (r):** {correlation:.2f}")
+                st.write(f"**Koefisien Korelasi (r):** {correlation:.2f} (Garis merah menunjukkan korelasi keseluruhan)")
 
             # TAB 5: HISTOGRAM
             with tab5:
@@ -210,4 +211,4 @@ if uploaded_files:
     except Exception as e:
         st.error(f"Terjadi kesalahan: {e}")
 else:
-    st.info("Silakan upload file Excel produksi di sidebar untuk memulai.")
+    st.info("Silakan upload satu atau beberapa file Excel produksi di sidebar untuk memulai.")
