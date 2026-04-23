@@ -10,11 +10,18 @@ import re
 # -------------------------------------------------------------------
 # PAGE CONFIG
 # -------------------------------------------------------------------
-st.set_page_config(page_title="QA System — Smart Dashboard", layout="wide", page_icon="🏭")
+# REVISI 1: Tambahin initial_sidebar_state="expanded" biar sidebar selalu kebuka
+st.set_page_config(
+    page_title="QA System — Smart Dashboard", 
+    layout="wide", 
+    page_icon="🏭",
+    initial_sidebar_state="expanded" 
+)
 
 st.markdown("""
 <style>
-#MainMenu, footer, header, [data-testid="stToolbar"] { visibility: hidden !important; }
+/* REVISI 2: Hapus 'header,' dari line di bawah ini biar tombol toggle sidebar balik */
+#MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden !important; }
 .block-container { padding-top: 1rem !important; }
 .main { background-color: #f4f6f9; }
 h1 { color: #1e3d59; }
@@ -35,22 +42,6 @@ div[data-testid="metric-container"] {
 .tag-cat  { background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:10px; font-size:.8em; font-weight:600; }
 </style>
 """, unsafe_allow_html=True)
-
-# ===================================================================
-# KONSTANTA SPC
-# ===================================================================
-SPC_FACTORS = {
-    2:  (1.880, 0.000, 3.267, 2.659, 0.000, 3.267, 1.128),
-    3:  (1.023, 0.000, 2.574, 1.954, 0.000, 2.568, 1.693),
-    4:  (0.729, 0.000, 2.282, 1.628, 0.000, 2.266, 2.059),
-    5:  (0.577, 0.000, 2.114, 1.427, 0.000, 2.089, 2.326),
-    6:  (0.483, 0.000, 2.004, 1.287, 0.030, 1.970, 2.534),
-    7:  (0.419, 0.076, 1.924, 1.182, 0.118, 1.882, 2.704),
-    8:  (0.373, 0.136, 1.864, 1.099, 0.185, 1.815, 2.847),
-    9:  (0.337, 0.184, 1.816, 1.032, 0.239, 1.761, 2.970),
-    10: (0.308, 0.223, 1.777, 0.975, 0.284, 1.716, 3.078),
-}
-def get_spc(n): return SPC_FACTORS[max(2, min(10, int(n)))]
 
 # ===================================================================
 # SMART COLUMN DETECTOR
