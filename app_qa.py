@@ -110,7 +110,7 @@ def detect_column_role(col_name, series: pd.Series):
                 return "numeric_count"
         return "measurement"  # angka kontinu → kemungkinan variabel
 
-    if pd.api.types.is_object_dtype(series) or pd.api.types.is_categorical_dtype(series):
+    if pd.api.types.is_object_dtype(series) or isinstance(series.dtype, pd.CategoricalDtype):
         nuniq = series.nunique()
         nrows = len(series.dropna())
         if nuniq < 20 and nrows > 0 and nuniq / nrows < 0.3:
@@ -605,7 +605,7 @@ if uploaded_files:
         for col in df_raw.columns:
             if df_raw[col].dtype == object:
                 try:
-                    parsed = pd.to_datetime(df_raw[col], infer_datetime_format=True, errors='raise')
+                    parsed = pd.to_datetime(df_raw[col], errors='raise')
                     df_raw[col] = parsed
                 except: pass
 
